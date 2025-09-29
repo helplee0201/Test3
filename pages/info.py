@@ -81,19 +81,10 @@ def info_page():
             df = pd.DataFrame(st.session_state.filtered_data)
             # Select columns based on transaction type
             columns = SALES_COLUMNS if st.session_state.transaction_type == "매출" else PURCHASE_COLUMNS
-            # Rename DataFrame columns to match the display columns
-            if st.session_state.transaction_type == "매출":
-                df = df.rename(columns={
-                    "매출처사업자번호": "매출처사업자번호",
-                    "매출처명": "매출처명",
-                    "매출유형": "매출유형"
-                })
-            else:
-                df = df.rename(columns={
-                    "매입처사업자번호": "매입처사업자번호",
-                    "매입처명": "매입처명",
-                    "매입유형": "매입유형"
-                })
+            # Ensure all expected columns are present, filling missing ones with NaN
+            for col in columns:
+                if col not in df.columns:
+                    df[col] = pd.NA
             df = df[columns]  # Reorder columns
             rows_per_page = 100
             total_rows = len(df)
