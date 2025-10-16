@@ -5,6 +5,9 @@ from utils.data import get_filtered_data
 # Set page configuration to wide
 st.set_page_config(page_title="정보 조회", layout="wide", initial_sidebar_state="collapsed")
 
+# Apply custom CSS
+st.markdown('<link href="styles.css" rel="stylesheet">', unsafe_allow_html=True)
+
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -34,93 +37,89 @@ def info_page():
     if not st.session_state.logged_in:
         st.error("로그인 후 이용해 주세요.")
         try:
-            st.switch_page("login.py")  # Redirect to login page
+            st.switch_page("login.py")
         except Exception as e:
             st.error(f"로그인 페이지로 전환 실패: {str(e)}")
-        st.stop()  # Halt execution if not logged in
-    else:
-        st.title("정보 조회 페이지")
+        st.stop()
+    
+    # Header
+    st.markdown('<div class="header"><h1>정보 조회</h1></div>', unsafe_allow_html=True)
+    
+    # Main container
+    with st.container():
+        st.markdown('<div class="container">', unsafe_allow_html=True)
+        st.markdown("<h2>조회 조건</h2>", unsafe_allow_html=True)
         
-        # Header with input fields
-        with st.container():
-            st.subheader("조회 조건")
-            col1, col2, col3 = st.columns([1, 1, 2])  # Three columns: biz_num, type, date range
+        with st.form(key="search_form"):
+            col1, col2, col3 = st.columns([1, 1, 2])
             with col1:
                 biz_num = "123-45-67890"
-                st.text_input("사업자등록번호", value=biz_num, disabled=True)
+                st.text_input("사업자등록번호", value=biz_num, disabled=True, help="사업자등록번호는 고정되어 있습니다.")
             with col2:
-                transaction_type = st.selectbox("매출/매입", ["매출", "매입"], key="transaction_type_select")
+                transaction_type = st.selectbox("매출/매입", ["매출", "매입"], key="transaction_type_select", help="조회할 거래 유형을 선택하세요.")
                 st.session_state.transaction_type = transaction_type
             with col3:
-                # Nested columns for start and end year-month pickers in one row
                 start_col, end_col = st.columns(2)
                 with start_col:
                     years = list(range(2020, 2030))
                     months = [f"{m:02d}" for m in range(1, 13)]
-                    start_year = st.selectbox("시작년도", years, index=years.index(2025), key="start_year")
-                    start_month = st.selectbox("시작월", months, index=months.index("08"), key="start_month")
+                    start_year = st.selectbox("시작년도", years, index=years.index(2025), key="start_year", help="조회 시작 연도")
+                    start_month = st.selectbox("시작월", months, index=months.index("08"), key="start_month", help="조회 시작 월")
                     start_year_month = f"{start_year}-{start_month}"
                 with end_col:
-                    end_year = st.selectbox("종료년도", years, index=years.index(2025), key="end_year")
-                    end_month = st.selectbox("종료월", months, index=months.index("09"), key="end_month")
+                    end_year = st.selectbox("종료년도", years, index=years.index(2025), key="end_year", help="조회 종료 연도")
+                    end_month = st.selectbox("종료월", months, index=months.index("09"), key="end_month", help="조회 종료 월")
                     end_year_month = f"{end_year}-{end_month}"
-        
-        if st.button("조회"):
-            if biz_num:
-                # Get filtered data
+            
+            submit_button = st.form_submit_button("조회", use_container_width=True)
+            
+            if submit_button and biz_num:
                 filtered_data = get_filtered_data(biz_num, start_year_month, end_year_month, transaction_type)
                 st.session_state.filtered_data = filtered_data
-                st.session_state.page_number = 1  # Reset to first page
+                st.session_state.page_number = 1
                 if filtered_data:
-                    st.subheader("조회 결과")
+                    st.markdown("<h3>조회 결과</h3>", unsafe_allow_html=True)
                 else:
                     st.warning("해당 조건으로 데이터가 없습니다.")
         
         # Display paginated data
         if st.session_state.filtered_data:
             df = pd.DataFrame(st.session_state.filtered_data)
-            # Select columns based on transaction type
             columns = SALES_COLUMNS if st.session_state.transaction_type == "매출" else PURCHASE_COLUMNS
-            # Ensure all expected columns are present, filling missing ones with NaN
             for col in columns:
                 if col not in df.columns:
                     df[col] = pd.NA
-            df = df[columns]  # Reorder columns
+            df = df[columns]
             rows_per_page = 100
             total_rows = len(df)
             total_pages = (total_rows + rows_per_page - 1) // rows_per_page
             
-            # Pagination controls
             col1, col2, col3 = st.columns([1, 2, 1])
             with col1:
                 if st.button("◄ 이전", disabled=(st.session_state.page_number <= 1)):
                     st.session_state.page_number = max(1, st.session_state.page_number - 1)
             with col2:
-                st.write(f"페이지 {st.session_state.page_number} / {total_pages}")
+                st.markdown(f"<p style='text-align: center;'>페이지 {st.session_state.page_number} / {total_pages}</p>", unsafe_allow_html=True)
             with col3:
                 if st.button("다음 ►", disabled=(st.session_state.page_number >= total_pages)):
                     st.session_state.page_number = min(total_pages, st.session_state.page_number + 1)
             
-            # Display current page data
             start_idx = (st.session_state.page_number - 1) * rows_per_page
             end_idx = min(start_idx + rows_per_page, total_rows)
             st.dataframe(df.iloc[start_idx:end_idx], use_container_width=True)
-
-        # Section for selecting and viewing daily details
-        if st.session_state.filtered_data:
-            st.subheader("상세 내역 보기")
-            # Create a list of options for selectbox (e.g., "기준년월 - 매출처명 (매출처사업자번호)")
+            
+            # Section for selecting and viewing daily details
+            st.markdown("<h3>상세 내역 보기</h3>", unsafe_allow_html=True)
             options = []
             for idx, row in df.iterrows():
                 partner_name = row["매출처명"] if st.session_state.transaction_type == "매출" else row["매입처명"]
                 partner_biz_num = row["매출처사업자번호"] if st.session_state.transaction_type == "매출" else row["매입처사업자번호"]
                 option = f"{row['기준년월']} - {partner_name} ({partner_biz_num})"
-                options.append((idx, option, row.to_dict()))  # Store index, display, and row dict
-
-            selected_option = st.selectbox("상세 내역을 볼 거래처 선택", [opt[1] for opt in options])
-
-            if st.button("상세 보기"):
-                # Find the selected row dict
+                options.append((idx, option, row.to_dict()))
+            
+            selected_option = st.selectbox("상세 내역을 볼 거래처 선택", [opt[1] for opt in options], help="상세 내역을 확인할 거래처를 선택하세요.")
+            
+            if st.button("상세 보기", use_container_width=True):
                 for opt in options:
                     if opt[1] == selected_option:
                         st.session_state.selected_row = opt[2]
@@ -129,7 +128,10 @@ def info_page():
                     st.switch_page("pages/3_daily_details.py")
                 except Exception as e:
                     st.error(f"상세 내역 페이지로 전환 실패: {str(e)}")
-
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown('<div class="footer">© 2025 테크핀레이팅스. All rights reserved.</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     info_page()
