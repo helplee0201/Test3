@@ -24,8 +24,10 @@ def login_page():
     # Main container
     with st.container():
         st.markdown('<div class="container">', unsafe_allow_html=True)
-        # Display logo
+        # Display logo with centered styling
+        st.markdown('<div class="logo-container">', unsafe_allow_html=True)
         st.image("./logo.png", width=200)
+        st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown("<h2>로그인</h2>", unsafe_allow_html=True)
         with st.form(key="login_form"):
@@ -43,7 +45,7 @@ def login_page():
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Footer
-    st.markdown('<div class="footer">© 2025 테크핀레이팅스. All rights reserved.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="footer">© 2025 비즈니스 관리 시스템. All rights reserved.</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     login_page()
