@@ -106,5 +106,30 @@ def info_page():
             end_idx = min(start_idx + rows_per_page, total_rows)
             st.dataframe(df.iloc[start_idx:end_idx], use_container_width=True)
 
+        # Section for selecting and viewing daily details
+        if st.session_state.filtered_data:
+            st.subheader("상세 내역 보기")
+            # Create a list of options for selectbox (e.g., "기준년월 - 매출처명 (매출처사업자번호)")
+            options = []
+            for idx, row in df.iterrows():
+                partner_name = row["매출처명"] if st.session_state.transaction_type == "매출" else row["매입처명"]
+                partner_biz_num = row["매출처사업자번호"] if st.session_state.transaction_type == "매출" else row["매입처사업자번호"]
+                option = f"{row['기준년월']} - {partner_name} ({partner_biz_num})"
+                options.append((idx, option, row.to_dict()))  # Store index, display, and row dict
+
+            selected_option = st.selectbox("상세 내역을 볼 거래처 선택", [opt[1] for opt in options])
+
+            if st.button("상세 보기"):
+                # Find the selected row dict
+                for opt in options:
+                    if opt[1] == selected_option:
+                        st.session_state.selected_row = opt[2]
+                        break
+                try:
+                    st.switch_page("pages/3_daily_details.py")
+                except Exception as e:
+                    st.error(f"상세 내역 페이지로 전환 실패: {str(e)}")
+
+
 if __name__ == "__main__":
     info_page()
