@@ -25,7 +25,7 @@ def login_page():
     with st.container():
         st.markdown('<div class="container">', unsafe_allow_html=True)
         # Display logo
-        st.image("./logo.png", width=200, caption="회사 로고")
+        st.image("./logo.png", width=500)
         
         st.markdown("<h2>로그인</h2>", unsafe_allow_html=True)
         with st.form(key="login_form"):
