@@ -25,7 +25,7 @@ def login_page():
     if st.button("조회"):
         st.session_state.logged_in = True
         try:
-            st.switch_page("pages/info.py")
+            st.switch_page("pages/2_info.py")
         except Exception as e:
             st.error(f"info.py로 전환 실패: {str(e)}")
 
